@@ -62,7 +62,7 @@ class DrcsConverter:
         # write header
         cellwidth = self.cellwidth
         cellheight = self.cellheight
-        output.write('1;0;0;%d;1;2;%d;0{ %c\n' % (cellwidth, cellheight, fbyte))
+        output.write('1;0;0;%d;1;2;%d;0{ %c' % (cellwidth, cellheight, fbyte))
 
     def __write_body_section(self, output, n):
 
@@ -87,7 +87,7 @@ class DrcsConverter:
                         if data[startpos + index] == positive:
                             acc += 1
                     output.write(chr(acc + 0x3f))
-            output.write(";\n")
+            output.write(";")
 
     def __write_terminator(self, output):
         # write ST
