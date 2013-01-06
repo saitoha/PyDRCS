@@ -142,7 +142,7 @@ class DrcsWriter:
         else:
             self.CSI='\x1b['
 
-    def draw(self, filename, columns, rows=None, negate=False, uni=False):
+    def draw(self, filename, columns=62, rows=None, negate=False, uni=False):
         import Image # PIL
         image = Image.open(filename)
         drcs_converter = DrcsConverter(image, self.f8bit, columns, rows, negate, uni)
