@@ -1,3 +1,5 @@
 include COPYING
 include README.rst
 include *.py
+include drcs/unifont-5.1.20080907.ttf
+
