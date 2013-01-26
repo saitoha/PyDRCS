@@ -35,6 +35,8 @@ or ::
   -n, --negate                  Negate image
   -c COLUMNS, --columns=COLUMNS Image width in cell size (default=62, max=62)
   -r ROWS, --rows=ROWS          Image height in cell size
+  -t, --text                    Interpret input stream as a text run
+  -f FONT, --font=FONT          Specifies the absolute path of font file if -t option is set (default: GNU unifont)
   --version                     show version
 
 
@@ -51,6 +53,13 @@ Dependency
 ----------
  - Python Imaging Library (PIL)
    http://www.pythonware.com/products/pil/ 
+
+ - wcwidth.py
+   https://svn.wso2.org/repos/wso2/carbon/platform/trunk/dependencies/cassandra/pylib/cqlshlib/wcwidth.py
+   (Licensed under Apache License 2.0)
+
+ - GNU Unifont Glyphs
+   http://unifoundry.com/unifont.html
 
 Reference
 ---------

@@ -22,7 +22,7 @@
 import sys, os, termios, select
 try:
     from cStringIO import StringIO
-except:
+except ImportError:
     from StringIO import StringIO
 
 class DrcsConverter:
@@ -142,9 +142,8 @@ class DrcsWriter:
         else:
             self.CSI='\x1b['
 
-    def draw(self, filename, columns=62, rows=None, negate=False, uni=False):
-        import Image # PIL
-        image = Image.open(filename)
+    def draw(self, image, columns=62, rows=None,
+             negate=False, uni=False):
         drcs_converter = DrcsConverter(image, self.f8bit, columns, rows, negate, uni)
         sys.stdout.write(drcs_converter.getvalue())
 

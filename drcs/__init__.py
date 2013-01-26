@@ -19,13 +19,13 @@
 # ***** END LICENSE BLOCK *****
 
 __author__  = "Hayaki Saito (user@zuse.jp)"
-__version__ = "0.0.2"
+__version__ = "0.0.3"
 __license__ = "GPL v3"
 
 import os, sys, optparse, select
 try:
     from cStringIO import StringIO
-except:
+except ImportError:
     from StringIO import StringIO
 
 from drcs import *
@@ -49,7 +49,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see http://www.gnu.org/licenses/.
         ''' % __version__
 
-def main():
+def _mainimpl():
 
     parser = optparse.OptionParser()
     
@@ -84,7 +84,17 @@ def main():
     parser.add_option("-r", "--rows",
                       dest="rows",
                       help="Image height in cell size")
-     
+
+    parser.add_option("-t", "--text",
+                      action="store_true",
+                      dest="text",
+                      default=False,
+                      help="Interpret input stream as a text run")
+ 
+    parser.add_option("-f", "--font",
+                      dest="font",
+                      help="Specifies the absolute path of font file if -t option is set")
+    
     parser.add_option('--version', dest='version',
                       action="store_true", default=False,
                       help='show version')
@@ -104,16 +114,53 @@ def main():
     else:
         imagefile = args[0]
 
-    columns = int(options.columns)
-    if columns > 62:
-        print "Wrong columns value is specified (max: 62)."
-        return
-     
-    rows = options.rows
-    if not rows is None:
-        rows = int(rows)
+    if options.text:
+        text = unicode(imagefile.getvalue(), "utf-8", "ignore")
+        import Image, ImageDraw, ImageFont
+        fontfile = "/System/Library/Fonts/Monaco.dfont"
+        fontfile = "/Users/user/"
 
-    writer.draw(imagefile, columns, rows, options.negate, options.uni)
+        if options.font:
+            fontfile = options.font
+        else:
+            import inspect
+            name = "unifont-5.1.20080907.ttf"
+            filename = inspect.getfile(inspect.currentframe())
+            dirpath = os.path.abspath(os.path.dirname(inspect.getfile(inspect.currentframe())))
+            fontfile = os.path.join(dirpath, name)
+
+        font = ImageFont.truetype(filename=fontfile,
+                                  size=50)
+        w, h = font.getsize(text)
+        image = Image.new('RGB', (w, h + 2), (255,255,255))
+        draw = ImageDraw.Draw(image)
+        draw.text((0, 0), text,
+                  font=font,
+                  fill=(0, 0, 0))
+        import wcwidth
+        columns = wcwidth.wcswidth(text)
+        rows = 1
+    else:
+        import Image # PIL
+        image = Image.open(imagefile)
+
+        columns = int(options.columns)
+        if columns > 62:
+            print "Wrong columns value is specified (max: 62)."
+            return
+         
+        rows = options.rows
+        if not rows is None:
+            rows = int(rows)
+
+    writer.draw(image,
+                columns,
+                rows,
+                options.negate,
+                options.uni)
+
+def main():
+    _mainimpl()
 
 if __name__ == '__main__':
     main()
