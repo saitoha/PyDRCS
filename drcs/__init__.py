@@ -26,11 +26,6 @@ import os
 import sys
 import optparse
 import select
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
-
 from drcs import DrcsWriter
 
 
@@ -116,9 +111,19 @@ def _mainimpl():
     writer = DrcsWriter(f8bit=options.f8bit)
 
     if select.select([sys.stdin, ], [], [], 0.0)[0]:
-        imagefile = StringIO(sys.stdin.read())
+        try:
+            from cStringIO import StringIO
+            imagefile = StringIO(sys.stdin.read())
+        except ImportError:
+            from StringIO import StringIO
+            imagefile = StringIO(sys.stdin.read())
     elif len(args) == 0 or args[0] == '-':
-        imagefile = StringIO(sys.stdin.read())
+        try:
+            from cStringIO import StringIO
+            imagefile = StringIO(sys.stdin.read())
+        except ImportError:
+            from StringIO import StringIO
+            imagefile = StringIO(sys.stdin.read())
     else:
         imagefile = args[0]
 

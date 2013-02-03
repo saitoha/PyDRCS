@@ -110,14 +110,18 @@ class DrcsConverter:
             output.write("\n")
 
             if self._use_unicode:
-                for dscs in xrange(0, self.rows):
-                    for c in xrange(0, self.columns):
-                        code = 0x100000 | 0x40 + dscs << 8 | 0x21 + c
-                        code -= 0x10000
-                        c1 = (code >> 10) + 0xd800
-                        c2 = (code & 0x3ff) + 0xdc00
-                        output.write(unichr(c1) + unichr(c2))
-                    output.write("\n")
+                output.write("\x1b[?8800h")
+                try:
+                    for dscs in xrange(0, self.rows):
+                        for c in xrange(0, self.columns):
+                            code = 0x100000 | 0x40 + dscs << 8 | 0x21 + c
+                            code -= 0x10000
+                            c1 = (code >> 10) + 0xd800
+                            c2 = (code & 0x3ff) + 0xdc00
+                            output.write(unichr(c1) + unichr(c2))
+                        output.write("\n")
+                finally:
+                    output.write("\x1b[?8800l")
 
             else:
                 for dscs in xrange(0, self.rows):
