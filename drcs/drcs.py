@@ -19,33 +19,28 @@
 # ***** END LICENSE BLOCK *****
 
 
-import sys, os, termios, select
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
-
 class DrcsConverter:
 
-    def __init__(self, image, f8bit, columns, rows=None, negate=False, uni=False):
-
-        import Image
-        if f8bit: # 8bit mode
-            self.DCS='\x90'
-            self.ST='\x9c'
+    def __init__(self, image, f8bit, columns,
+                 rows=None, negate=False, use_unicode=False):
+        if f8bit:  # 8bit mode
+            self.DCS = '\x90'
+            self.ST = '\x9c'
         else:
-            self.DCS='\x1bP'
-            self.ST='\x1b\\'
+            self.DCS = '\x1bP'
+            self.ST = '\x1b\\'
 
         self.cellwidth = 15
         self.cellheight = 24
         self.columns = columns
         width, height = image.size
         if rows is None:
-            rows = int(1.0 * columns * height / width / self.cellheight * self.cellwidth )
+            display_width = columns * self.cellwidth
+            display_height = 1.0 * display_width * height / width
+            rows = int(display_height / self.cellheight)
         self.rows = rows
         self.negate = negate
-        self.uni = uni
+        self._use_unicode = use_unicode
         width = self.cellwidth * self.columns
         height = self.cellheight * rows
         image = image.resize((width, height))
@@ -91,15 +86,20 @@ class DrcsConverter:
 
     def __write_terminator(self, output):
         # write ST
-        output.write(self.ST) # terminate Device Control String
+        output.write(self.ST)  # terminate Device Control String
 
     def getvalue(self):
 
-        if self.uni:
-            import codecs
-            output = codecs.getwriter("utf-8")(StringIO())
-        else:
+        try:
+            from cStringIO import StringIO
             output = StringIO()
+        except ImportError:
+            from StringIO import StringIO
+            output = StringIO()
+
+        if self._use_unicode:
+            import codecs
+            output = codecs.getwriter("utf-8")(output)
 
         try:
             for n in xrange(0, self.rows):
@@ -109,7 +109,7 @@ class DrcsConverter:
 
             output.write("\n")
 
-            if self.uni:
+            if self._use_unicode:
                 for dscs in xrange(0, self.rows):
                     for c in xrange(0, self.columns):
                         code = 0x100000 | 0x40 + dscs << 8 | 0x21 + c
@@ -133,17 +133,19 @@ class DrcsConverter:
 
         return value
 
+
 class DrcsWriter:
 
-    def __init__(self, f8bit = False):
+    def __init__(self, f8bit=False):
         self.f8bit = f8bit
-        if f8bit: # 8bit mode
-            self.CSI='\x9b'
+        if f8bit:  # 8bit mode
+            self.CSI = '\x9b'
         else:
-            self.CSI='\x1b['
+            self.CSI = '\x1b['
 
     def draw(self, image, columns=62, rows=None,
-             negate=False, uni=False):
-        drcs_converter = DrcsConverter(image, self.f8bit, columns, rows, negate, uni)
+             negate=False, use_unicode=False):
+        drcs_converter = DrcsConverter(image, self.f8bit,
+                                       columns, rows, negate, use_unicode)
+        import sys
         sys.stdout.write(drcs_converter.getvalue())
-
