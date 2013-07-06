@@ -132,8 +132,6 @@ def _mainimpl():
         import Image
         import ImageDraw
         import ImageFont
-        fontfile = "/System/Library/Fonts/Monaco.dfont"
-        fontfile = "/Users/user/"
 
         if options.font:
             fontfile = options.font
