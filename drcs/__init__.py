@@ -19,7 +19,7 @@
 # ***** END LICENSE BLOCK *****
 
 __author__ = "Hayaki Saito (user@zuse.jp)"
-__version__ = "0.0.5"
+__version__ = "0.1.0"
 __license__ = "GPL v3"
 
 import os
@@ -95,8 +95,15 @@ def _mainimpl():
 
     parser.add_option("-f", "--font",
                       dest="font",
-                      help="Specifies the absolute path of font file if"
+                      help="Specify the absolute path of font file if"
                            " -t option is set")
+
+    parser.add_option("--ncolor",
+                      dest="ncolor",
+                      action="store",
+                      type="int",
+                      default=1,
+                      help="Specify number of color")
 
     parser.add_option('--version', dest='version',
                       action="store_true", default=False,
@@ -154,7 +161,7 @@ def _mainimpl():
         columns = wcwidth.wcswidth(text)
         rows = 1
     else:
-        import Image  # PIL
+        from PIL import Image  # PIL
         image = Image.open(imagefile)
 
         columns = int(options.columns)
@@ -170,7 +177,8 @@ def _mainimpl():
                 columns,
                 rows,
                 options.negate,
-                options.use_unicode)
+                options.use_unicode,
+                ncolor=options.ncolor)
 
 
 def main():

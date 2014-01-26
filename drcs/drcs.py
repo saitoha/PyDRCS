@@ -22,7 +22,7 @@
 class DrcsConverter:
 
     def __init__(self, image, f8bit, columns,
-                 rows=None, negate=False, use_unicode=False):
+                 rows=None, negate=False, use_unicode=False, ncolor=1):
         if f8bit:  # 8bit mode
             self.DCS = '\x90'
             self.ST = '\x9c'
@@ -44,9 +44,19 @@ class DrcsConverter:
         width = self.cellwidth * self.columns
         height = self.cellheight * rows
         image = image.resize((width, height))
-        image = image.convert("L")
-        image = image.convert("1")
-        self.palette = image.getpalette()
+
+        if ncolor > 256:
+            ncolor = 256
+        self._ncolor = ncolor
+
+        if ncolor == 1:
+            image = image.convert("L")
+            image = image.convert("1")
+            self.palette = None
+        else:
+            from PIL import Image
+            image = image.convert("P", palette=Image.ADAPTIVE, colors=ncolor)
+            self.palette = image.getpalette()
         self.data = image.getdata()
 
     def __write_header(self, output, fbyte):
@@ -57,7 +67,66 @@ class DrcsConverter:
         # write header
         cellwidth = self.cellwidth
         cellheight = self.cellheight
-        output.write('1;0;0;%d;1;2;%d;0{ %c' % (cellwidth, cellheight, fbyte))
+        if self._ncolor > 1:
+            pt = 3
+        else:
+            pt = 1
+        output.write('1;0;0;%d;1;%d;%d;0{ %c' % (cellwidth, pt, cellheight, fbyte))
+
+    def _write_sixel_palette(self, output):
+
+        palette = self.palette
+
+        # write palette section
+        for i in xrange(0, self._ncolor * 3, 3):
+            no = i / 3
+            r = palette[i + 0] * 100 / 256
+            g = palette[i + 1] * 100 / 256
+            b = palette[i + 2] * 100 / 256
+            output.write('#%d;2;%d;%d;%d' % (no, r, g, b))
+
+    def _write_colored_sixel(self, output, data, width, top, keycolor):
+
+        n = 1
+        for y in xrange(top, top + 6):
+            p = y * width
+            cached_no = data[p]
+            count = 1
+            c = -1
+            for x in xrange(0, width):
+                color_no = data[p + x]
+                if color_no == cached_no and count < 255:
+                    count += 1
+                else:
+                    if cached_no == keycolor:
+                        c = 0x3f
+                    else:
+                        c = n + 0x3f
+                    if count == 1:
+                        output.write('#%d%c' % (cached_no, c))
+                    elif count == 2:
+                        output.write('#%d%c%c' % (cached_no, c, c))
+                        count = 1
+                    else:
+                        output.write('#%d!%d%c' % (cached_no, count, c))
+                        count = 1
+                    cached_no = color_no
+            if c != -1:
+                if cached_no == keycolor:
+                    c = 0x3f 
+                if count == 1:
+                    output.write('#%d%c' % (cached_no, c))
+                elif count == 2:
+                    output.write('#%d%c%c' % (cached_no, c, c))
+                else:
+                    output.write('#%d!%d%c' % (cached_no, count, c))
+            output.write('$')  # write line terminator
+            if n == 32:
+                n = 1
+                output.write('-')  # write sixel line separator
+            else:
+                n <<= 1
+
 
     def __write_body_section(self, output, n):
 
@@ -67,72 +136,63 @@ class DrcsConverter:
         cellheight = self.cellheight
         cellwidth = self.cellwidth
         width = self.cellwidth * self.columns
-        startpos = width * cellheight * n
-        positive = 255 if self.negate else 0
-        for c in xrange(0, self.columns):
-            startx = cellwidth * c
-            for y in xrange(0, cellheight, 6):
-                if y != 0:
-                    output.write("/")
-                for x in range(0, cellwidth):
-                    acc = 0
-                    for i in xrange(0, 6):
-                        acc = acc * 2
-                        index = (y + 5 - i) * width + startx + x
-                        if data[startpos + index] == positive:
-                            acc += 1
-                    output.write(chr(acc + 0x3f))
-            output.write(";")
+
+        if self.palette:
+            for y in xrange(cellheight * n, cellheight * (n + 1), 6):
+                self._write_colored_sixel(output, data, width, y, -1)
+        else:
+            startpos = width * cellheight * n
+            positive = 255 if self.negate else 0
+            for c in xrange(0, self.columns):
+                startx = cellwidth * c
+                for y in xrange(0, cellheight, 6):
+                    if y != 0:
+                        output.write("/")
+                    for x in range(0, cellwidth):
+                        acc = 0
+                        for i in xrange(0, 6):
+                            acc = acc * 2
+                            index = (y + 5 - i) * width + startx + x
+                            if data[startpos + index] == positive:
+                                acc += 1
+                        output.write(chr(acc + 0x3f))
+                output.write(";")
 
     def __write_terminator(self, output):
         # write ST
         output.write(self.ST)  # terminate Device Control String
 
-    def getvalue(self):
-
-        try:
-            from cStringIO import StringIO
-            output = StringIO()
-        except ImportError:
-            from StringIO import StringIO
-            output = StringIO()
+    def write(self, output):
 
         if self._use_unicode:
             import codecs
             output = codecs.getwriter("utf-8")(output)
 
-        try:
-            for n in xrange(0, self.rows):
-                self.__write_header(output, 0x40 + n)
-                self.__write_body_section(output, n)
-                self.__write_terminator(output)
+        for n in xrange(0, self.rows):
+            self.__write_header(output, 0x40 + n)
+            if self._ncolor > 1:
+                self._write_sixel_palette(output)
+            self.__write_body_section(output, n)
+            self.__write_terminator(output)
 
-            output.write("\n")
+        output.write("\n")
 
-            if self._use_unicode:
-                output.write("\x1b[?8800h")
-                for dscs in xrange(0, self.rows):
-                    for c in xrange(0, self.columns):
-                        code = 0x100000 | 0x40 + dscs << 8 | 0x21 + c
-                        code -= 0x10000
-                        c1 = (code >> 10) + 0xd800
-                        c2 = (code & 0x3ff) + 0xdc00
-                        output.write(unichr(c1) + unichr(c2))
-                    output.write("\n")
-            else:
-                for dscs in xrange(0, self.rows):
-                    output.write("\x1b( %c" % (0x40 + dscs))
-                    for c in xrange(0, self.columns):
-                        output.write(chr(0x21 + c))
-                    output.write("\x1b(B\n")
-
-            value = output.getvalue()
-
-        finally:
-            output.close()
-
-        return value
-
+        if self._use_unicode:
+            output.write("\x1b[?8800h")
+            for dscs in xrange(0, self.rows):
+                for c in xrange(0, self.columns):
+                    code = 0x100000 | 0x40 + dscs << 8 | 0x21 + c
+                    code -= 0x10000
+                    c1 = (code >> 10) + 0xd800
+                    c2 = (code & 0x3ff) + 0xdc00
+                    output.write(unichr(c1) + unichr(c2))
+                output.write("\n")
+        else:
+            for dscs in xrange(0, self.rows):
+                output.write("\x1b( %c" % (0x40 + dscs))
+                for c in xrange(0, self.columns):
+                    output.write(chr(0x21 + c))
+                output.write("\x1b(B\n")
 
 class DrcsWriter:
 
@@ -144,8 +204,8 @@ class DrcsWriter:
             self.CSI = '\x1b['
 
     def draw(self, image, columns=62, rows=None,
-             negate=False, use_unicode=False):
+             negate=False, use_unicode=False, ncolor=1):
         drcs_converter = DrcsConverter(image, self.f8bit,
-                                       columns, rows, negate, use_unicode)
+                                       columns, rows, negate, use_unicode, ncolor=ncolor)
         import sys
-        sys.stdout.write(drcs_converter.getvalue())
+        drcs_converter.write(sys.stdout)
