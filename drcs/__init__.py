@@ -19,20 +19,21 @@
 # ***** END LICENSE BLOCK *****
 
 __author__ = "Hayaki Saito (user@zuse.jp)"
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 __license__ = "GPL v3"
 
 import os
 import sys
 import optparse
 import select
+import logging
 from drcs import DrcsWriter
 
 
 def _printver():
         print '''
 drcsconv %s
-Copyright (C) 2012-2013 Hayaki Saito <user@zuse.jp>.
+Copyright (C) 2012-2014 Hayaki Saito <user@zuse.jp>.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -49,7 +50,7 @@ along with this program. If not, see http://www.gnu.org/licenses/.
         ''' % __version__
 
 
-def _mainimpl():
+def _parse_args():
 
     parser = optparse.OptionParser()
 
@@ -109,70 +110,44 @@ def _mainimpl():
                       action="store_true", default=False,
                       help='show version')
 
-    options, args = parser.parse_args()
+    return parser.parse_args()
 
-    if options.version:
-        _printver()
-        return
+
+def _drawtext(options, args):
+
+    if select.select([sys.stdin, ], [], [], 0.0):
+        text = sys.stdin.read()
+    elif len(args) == 0 or args[0] == '-':
+        text = sys.stdin.read()
+
+    import re
+    text = re.sub('[\x00-\x1f\x7f]', '', text)
+
+    text = unicode(text, "utf-8", "ignore")
+    from PIL import Image
+    from PIL import ImageDraw
+    from PIL import ImageFont
+
+    if options.font:
+        fontfile = options.font
+    else:
+        import inspect
+        name = "unifont-5.1.20080907.ttf"
+        filename = inspect.getfile(inspect.currentframe())
+        dirpath = os.path.abspath(os.path.dirname(filename))
+        fontfile = os.path.join(dirpath, name)
+
+    font = ImageFont.truetype(filename=fontfile,
+                              size=50)
+    w, h = font.getsize(text)
+    image = Image.new('RGB', (w, h + 2), (255, 255, 255))
+    draw = ImageDraw.Draw(image)
+    draw.text((0, 0), text, font=font, fill=(0, 0, 0))
+    import wcwidth
+    columns = wcwidth.wcswidth(text)
+    rows = 1
 
     writer = DrcsWriter(f8bit=options.f8bit)
-
-    if options.text:
-
-        if select.select([sys.stdin, ], [], [], 0.0):
-            text = sys.stdin.read()
-        elif len(args) == 0 or args[0] == '-':
-            text = sys.stdin.read()
-
-        import re
-        text = re.sub('[\x00-\x1f\x7f]', '', text)
-
-        text = unicode(text, "utf-8", "ignore")
-        from PIL import Image
-        from PIL import ImageDraw
-        from PIL import ImageFont
-
-        if options.font:
-            fontfile = options.font
-        else:
-            import inspect
-            name = "unifont-5.1.20080907.ttf"
-            filename = inspect.getfile(inspect.currentframe())
-            dirpath = os.path.abspath(os.path.dirname(filename))
-            fontfile = os.path.join(dirpath, name)
-
-        font = ImageFont.truetype(filename=fontfile,
-                                  size=50)
-        w, h = font.getsize(text)
-        image = Image.new('RGB', (w, h + 2), (255, 255, 255))
-        draw = ImageDraw.Draw(image)
-        draw.text((0, 0), text,
-                  font=font,
-                  fill=(0, 0, 0))
-        import wcwidth
-        columns = wcwidth.wcswidth(text)
-        rows = 1
-    else:
-
-        if select.select([sys.stdin, ], [], [], 0.0)[0]:
-            imagefile = sys.stdin
-        elif len(args) == 0 or args[0] == '-':
-            imagefile = sys.stdin
-        else:
-            imagefile = args[0]
-
-        from PIL import Image  # PIL
-        image = Image.open(imagefile)
-
-        columns = int(options.columns)
-        if columns > 62:
-            print "Wrong columns value is specified (max: 62)."
-            return
-
-        rows = options.rows
-        if not rows is None:
-            rows = int(rows)
-
     writer.draw(image,
                 columns,
                 rows,
@@ -180,6 +155,76 @@ def _mainimpl():
                 options.use_unicode,
                 ncolor=options.ncolor)
 
+def _filenize(f):
+    import stat
+
+    mode = os.fstat(f.fileno()).st_mode
+    if stat.S_ISFIFO(mode) or os.isatty(f.fileno()):
+        try:
+            from cStringIO import StringIO
+        except ImportError:
+            from StringIO import StringIO
+        return StringIO(f.read())
+    return f
+
+
+def _drawimage(options, args):
+
+    columns = int(options.columns)
+    if columns > 62:
+        message = "Wrong columns value is specified (max: 62)."
+        raise optparse.OptionValueError(message)
+
+    if select.select([sys.stdin, ], [], [], 0.0):
+        imagefile = _filenize(sys.stdin)
+    elif len(args) == 0 or args[0] == '-':
+        imagefile = _filenize(sys.stdin)
+    else:
+        imagefile = args[0]
+
+    from PIL import Image  # PIL
+    image = Image.open(imagefile)
+
+    rows = options.rows
+    if not rows is None:
+        rows = int(rows)
+
+    writer = DrcsWriter(f8bit=options.f8bit)
+    writer.draw(image,
+                columns,
+                rows,
+                options.negate,
+                options.use_unicode,
+                ncolor=options.ncolor)
+
+
+def _mainimpl():
+
+    rcdir = os.path.join(os.getenv("HOME"), ".pydrcs")
+    logdir = os.path.join(rcdir, "log")
+    if not os.path.exists(logdir):
+        os.makedirs(logdir)
+
+    logfile = os.path.join(logdir, "log.txt")
+    logging.basicConfig(filename=logfile, filemode="w")
+
+    try:
+        options, args = _parse_args()
+
+        if options.version:
+            _printver()
+            return
+
+        if options.text:
+            _drawtext(options, args)
+        else:
+            _drawimage(options, args)
+    except optparse.OptionValueError, e:
+        logging.exception(e)
+        print e
+    except Exception, e:
+        logging.exception(e)
+        print e
 
 def main():
     _mainimpl()
