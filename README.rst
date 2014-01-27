@@ -37,6 +37,7 @@ or ::
   -r ROWS, --rows=ROWS          Image height in cell size
   -t, --text                    Interpret input stream as a text run
   -f FONT, --font=FONT          Specifies the absolute path of font file if -t option is set (default: GNU unifont)
+  --ncolor=NCOLOR               Specify number of color
   --version                     show version
 
 
