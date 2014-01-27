@@ -118,19 +118,9 @@ def _mainimpl():
     writer = DrcsWriter(f8bit=options.f8bit)
 
     if select.select([sys.stdin, ], [], [], 0.0)[0]:
-        try:
-            from cStringIO import StringIO
-            imagefile = StringIO(sys.stdin.read())
-        except ImportError:
-            from StringIO import StringIO
-            imagefile = StringIO(sys.stdin.read())
+        imagefile = sys.stdin
     elif len(args) == 0 or args[0] == '-':
-        try:
-            from cStringIO import StringIO
-            imagefile = StringIO(sys.stdin.read())
-        except ImportError:
-            from StringIO import StringIO
-            imagefile = StringIO(sys.stdin.read())
+        imagefile = sys.stdin
     else:
         imagefile = args[0]
 
