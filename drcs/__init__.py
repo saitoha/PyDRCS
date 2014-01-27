@@ -117,18 +117,20 @@ def _mainimpl():
 
     writer = DrcsWriter(f8bit=options.f8bit)
 
-    if select.select([sys.stdin, ], [], [], 0.0)[0]:
-        imagefile = sys.stdin
-    elif len(args) == 0 or args[0] == '-':
-        imagefile = sys.stdin
-    else:
-        imagefile = args[0]
-
     if options.text:
-        text = unicode(imagefile.getvalue(), "utf-8", "ignore")
-        import Image
-        import ImageDraw
-        import ImageFont
+
+        if select.select([sys.stdin, ], [], [], 0.0):
+            text = sys.stdin.read()
+        elif len(args) == 0 or args[0] == '-':
+            text = sys.stdin.read()
+
+        import re
+        text = re.sub('[\x00-\x1f\x7f]', '', text)
+
+        text = unicode(text, "utf-8", "ignore")
+        from PIL import Image
+        from PIL import ImageDraw
+        from PIL import ImageFont
 
         if options.font:
             fontfile = options.font
@@ -151,6 +153,14 @@ def _mainimpl():
         columns = wcwidth.wcswidth(text)
         rows = 1
     else:
+
+        if select.select([sys.stdin, ], [], [], 0.0)[0]:
+            imagefile = sys.stdin
+        elif len(args) == 0 or args[0] == '-':
+            imagefile = sys.stdin
+        else:
+            imagefile = args[0]
+
         from PIL import Image  # PIL
         image = Image.open(imagefile)
 
