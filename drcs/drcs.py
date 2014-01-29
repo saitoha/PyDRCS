@@ -18,6 +18,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 # ***** END LICENSE BLOCK *****
 
+import sys
+import os
 
 class DrcsConverter:
 
@@ -178,7 +180,6 @@ class DrcsConverter:
         output.write("\n")
 
         if self._use_unicode:
-            output.write("\x1b[?8800h")
             for dscs in xrange(0, self.rows):
                 for c in xrange(0, self.columns):
                     code = 0x100000 | 0x40 + dscs << 8 | 0x21 + c
@@ -204,8 +205,11 @@ class DrcsWriter:
             self.CSI = '\x1b['
 
     def draw(self, image, columns=62, rows=None,
-             negate=False, use_unicode=False, ncolor=1):
+             negate=False, use_unicode=False,
+             output=sys.stdout,
+             ncolor=1):
         drcs_converter = DrcsConverter(image, self.f8bit,
-                                       columns, rows, negate, use_unicode, ncolor=ncolor)
-        import sys
-        drcs_converter.write(sys.stdout)
+                                       columns, rows, negate,
+                                       use_unicode,
+                                       ncolor=ncolor)
+        drcs_converter.write(output)

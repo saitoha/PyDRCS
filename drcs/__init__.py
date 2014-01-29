@@ -189,12 +189,16 @@ def _drawimage(options, args):
     if not rows is None:
         rows = int(rows)
 
+    output = sys.stdout
+    output.write("\x1b[?8800h")
+
     writer = DrcsWriter(f8bit=options.f8bit)
     writer.draw(image,
                 columns,
                 rows,
                 options.negate,
                 options.use_unicode,
+                output=output,
                 ncolor=options.ncolor)
 
 
