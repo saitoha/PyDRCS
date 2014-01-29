@@ -1,9 +1,16 @@
 
+VIMRUNTIME=~/.vim
+FTDETECTDIR=$(VIMRUNTIME)/ftdetect
+FTPLUGINDIR=$(VIMRUNTIME)/ftplugin
 
-all:
-	mkdir -p ~/.vim/ftdetect
-	mkdir -p ~/.vim/ftplugin
-	ln -f vim/ftdetect/drcs.vim ~/.vim/ftdetect
-	ln -f vim/ftdetect/image.vim ~/.vim/ftdetect
-	ln -f vim/ftplugin/drcs.vim ~/.vim/ftplugin
-	ln -f vim/ftplugin/image.vim ~/.vim/ftplugin
+all: $(FTDETECTDIR) $(FTPLUGINDIR)
+	ln -f vim/ftdetect/drcs.vim $(FTDETECTDIR)
+	ln -f vim/ftdetect/image.vim $(FTDETECTDIR)
+	ln -f vim/ftplugin/drcs.vim $(FTPLUGINDIR)
+	ln -f vim/ftplugin/image.vim $(FTPLUGINDIR)
+
+$(FTDETECTDIR):
+	mkdir -p $@
+
+$(FTPLUGINDIR):
+	mkdir -p $@
