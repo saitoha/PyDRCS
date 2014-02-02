@@ -19,7 +19,7 @@
 # ***** END LICENSE BLOCK *****
 
 __author__ = "Hayaki Saito (user@zuse.jp)"
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 __license__ = "GPL v3"
 
 import os
@@ -175,7 +175,7 @@ def _drawimage(options, args):
         message = "Wrong columns value is specified (max: 62)."
         raise optparse.OptionValueError(message)
 
-    if select.select([sys.stdin, ], [], [], 0.0):
+    if select.select([sys.stdin, ], [], [], 0.0)[0]:
         imagefile = _filenize(sys.stdin)
     elif len(args) == 0 or args[0] == '-':
         imagefile = _filenize(sys.stdin)
