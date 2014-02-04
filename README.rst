@@ -32,12 +32,13 @@ or ::
   -8, --8bit-mode               Generate a DRCS image for 8bit terminal or printer
   -7, --7bit-mode               Generate a DRCS image for 7bit terminal or printer
   -u, --unicode                 Use drcsterm's DRCS-unicode mapping
-  -n, --negate                  Negate image
+  -!, --negate                  Negate image
   -c COLUMNS, --columns=COLUMNS Image width in cell size (default=62, max=62)
   -r ROWS, --rows=ROWS          Image height in cell size
   -t, --text                    Interpret input stream as a text run
   -f FONT, --font=FONT          Specifies the absolute path of font file if -t option is set (default: GNU unifont)
-  --ncolor=NCOLOR               Specify number of color
+  -n, --ncolor=NCOLOR           Specify number of color
+  -d, --definition-only         Emit only escape sequences. don't output printable characters
   --version                     show version
 
 
