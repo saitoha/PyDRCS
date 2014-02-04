@@ -177,7 +177,7 @@ class DrcsConverter:
             self.__write_body_section(output, n)
             self.__write_terminator(output)
 
-        if not True:
+        if not defonly:
             if self._use_unicode:
                 for dscs in xrange(0, self.rows):
                     for c in xrange(0, self.columns):
