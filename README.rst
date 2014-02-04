@@ -39,7 +39,7 @@ or ::
   -f FONT, --font=FONT                       Specifies the absolute path of font file if -t option is set (default: GNU unifont)
   -n, --ncolor=NCOLOR                        Specify number of color
   -d, --definition-only                      Emit only escape sequences. don't output printable characters
-  -s STARTOFFSET, --start-offset=STARTOFFSET Start offset for DCSC allocation
+  -s STARTOFFSET, --start-offset=STARTOFFSET Start offset for DSCS allocation
   --version                                  show version
 
 
