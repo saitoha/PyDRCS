@@ -164,14 +164,14 @@ class DrcsConverter:
         # write ST
         output.write(self.ST)  # terminate Device Control String
 
-    def write(self, output, defonly):
+    def write(self, output, defonly, startoffset):
 
         if self._use_unicode:
             import codecs
             output = codecs.getwriter("utf-8")(output)
 
         for n in xrange(0, self.rows):
-            self.__write_header(output, 0x40 + n)
+            self.__write_header(output, 0x40 + n + startoffset)
             if self._ncolor > 1:
                 self._write_sixel_palette(output)
             self.__write_body_section(output, n)
@@ -179,7 +179,7 @@ class DrcsConverter:
 
         if not defonly:
             if self._use_unicode:
-                for dscs in xrange(0, self.rows):
+                for dscs in xrange(startoffset, self.rows + startoffset):
                     for c in xrange(0, self.columns):
                         code = 0x100000 | 0x40 + dscs << 8 | 0x21 + c
                         code -= 0x10000
@@ -189,7 +189,7 @@ class DrcsConverter:
                     output.write("\n")
             else:
                 for dscs in xrange(0, self.rows):
-                    output.write("\x1b( %c" % (0x40 + dscs))
+                    output.write("\x1b( %c" % (0x40 + dscs + startoffset))
                     for c in xrange(0, self.columns):
                         output.write(chr(0x21 + c))
                     output.write("\x1b(B\n")
@@ -198,18 +198,16 @@ class DrcsWriter:
 
     def __init__(self, f8bit=False):
         self.f8bit = f8bit
-        if f8bit:  # 8bit mode
-            self.CSI = '\x9b'
-        else:
-            self.CSI = '\x1b['
 
     def draw(self, image, columns=62, rows=None,
              negate=False, use_unicode=False,
              output=sys.stdout,
              ncolor=1,
-             defonly=False):
+             defonly=False,
+             startoffset=0):
         drcs_converter = DrcsConverter(image, self.f8bit,
                                        columns, rows, negate,
                                        use_unicode,
                                        ncolor=ncolor)
-        drcs_converter.write(output, defonly=defonly)
+        drcs_converter.write(output, defonly=defonly, startoffset=startoffset)
+

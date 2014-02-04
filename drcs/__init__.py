@@ -113,6 +113,13 @@ def _parse_args():
                       help="Emit only escape sequences. don't output "
                            "printable characters")
 
+    parser.add_option("-s", "--start-offset",
+                      dest="startoffset",
+                      action="store",
+                      type="int",
+                      default=0,
+                      help="Start offset for DCSC allocation")
+
     parser.add_option('--version', dest='version',
                       action="store_true", default=False,
                       help='show version')
@@ -161,7 +168,8 @@ def _drawtext(options, args):
                 options.negate,
                 options.use_unicode,
                 ncolor=options.ncolor,
-                defonly=options.defonly)
+                defonly=options.defonly,
+                startoffset=options.startoffset)
 
 def _filenize(f):
     import stat
@@ -207,7 +215,9 @@ def _drawimage(options, args):
                 options.negate,
                 options.use_unicode,
                 output=output,
-                ncolor=options.ncolor)
+                ncolor=options.ncolor,
+                defonly=options.defonly,
+                startoffset=options.startoffset)
 
 
 def _mainimpl():
