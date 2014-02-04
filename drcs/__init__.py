@@ -67,7 +67,7 @@ def _parse_args():
                       help="Generate a drcs font image for 7bit terminal"
                            " or printer")
 
-    parser.add_option("-n", "--negate",
+    parser.add_option("-!", "--negate",
                       action="store_true",
                       dest="negate",
                       default=False,
@@ -99,12 +99,19 @@ def _parse_args():
                       help="Specify the absolute path of font file if"
                            " -t option is set")
 
-    parser.add_option("--ncolor",
+    parser.add_option("-n", "--ncolor",
                       dest="ncolor",
                       action="store",
                       type="int",
                       default=1,
                       help="Specify number of color")
+
+    parser.add_option("-d", "--definition-only",
+                      dest="defonly",
+                      action="store_true",
+                      default=False,
+                      help="Emit only escape sequences. don't output "
+                           "printable characters")
 
     parser.add_option('--version', dest='version',
                       action="store_true", default=False,
@@ -153,7 +160,8 @@ def _drawtext(options, args):
                 rows,
                 options.negate,
                 options.use_unicode,
-                ncolor=options.ncolor)
+                ncolor=options.ncolor,
+                defonly=options.defonly)
 
 def _filenize(f):
     import stat

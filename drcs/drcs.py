@@ -164,7 +164,7 @@ class DrcsConverter:
         # write ST
         output.write(self.ST)  # terminate Device Control String
 
-    def write(self, output):
+    def write(self, output, defonly):
 
         if self._use_unicode:
             import codecs
@@ -177,23 +177,22 @@ class DrcsConverter:
             self.__write_body_section(output, n)
             self.__write_terminator(output)
 
-        output.write("\n")
-
-        if self._use_unicode:
-            for dscs in xrange(0, self.rows):
-                for c in xrange(0, self.columns):
-                    code = 0x100000 | 0x40 + dscs << 8 | 0x21 + c
-                    code -= 0x10000
-                    c1 = (code >> 10) + 0xd800
-                    c2 = (code & 0x3ff) + 0xdc00
-                    output.write(unichr(c1) + unichr(c2))
-                output.write("\n")
-        else:
-            for dscs in xrange(0, self.rows):
-                output.write("\x1b( %c" % (0x40 + dscs))
-                for c in xrange(0, self.columns):
-                    output.write(chr(0x21 + c))
-                output.write("\x1b(B\n")
+        if not True:
+            if self._use_unicode:
+                for dscs in xrange(0, self.rows):
+                    for c in xrange(0, self.columns):
+                        code = 0x100000 | 0x40 + dscs << 8 | 0x21 + c
+                        code -= 0x10000
+                        c1 = (code >> 10) + 0xd800
+                        c2 = (code & 0x3ff) + 0xdc00
+                        output.write(unichr(c1) + unichr(c2))
+                    output.write("\n")
+            else:
+                for dscs in xrange(0, self.rows):
+                    output.write("\x1b( %c" % (0x40 + dscs))
+                    for c in xrange(0, self.columns):
+                        output.write(chr(0x21 + c))
+                    output.write("\x1b(B\n")
 
 class DrcsWriter:
 
@@ -207,9 +206,10 @@ class DrcsWriter:
     def draw(self, image, columns=62, rows=None,
              negate=False, use_unicode=False,
              output=sys.stdout,
-             ncolor=1):
+             ncolor=1,
+             defonly=False):
         drcs_converter = DrcsConverter(image, self.f8bit,
                                        columns, rows, negate,
                                        use_unicode,
                                        ncolor=ncolor)
-        drcs_converter.write(output)
+        drcs_converter.write(output, defonly=defonly)
