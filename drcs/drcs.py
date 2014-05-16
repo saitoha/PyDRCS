@@ -19,7 +19,7 @@
 # ***** END LICENSE BLOCK *****
 
 import sys
-import os
+
 
 class DrcsConverter:
 
@@ -115,7 +115,7 @@ class DrcsConverter:
                     cached_no = color_no
             if c != -1:
                 if cached_no == keycolor:
-                    c = 0x3f 
+                    c = 0x3f
                 if count == 1:
                     output.write('#%d%c' % (cached_no, c))
                 elif count == 2:
@@ -128,7 +128,6 @@ class DrcsConverter:
                 output.write('-')  # write sixel line separator
             else:
                 n <<= 1
-
 
     def __write_body_section(self, output, n):
 
@@ -194,6 +193,7 @@ class DrcsConverter:
                         output.write(chr(0x21 + c))
                     output.write("\x1b(B\n")
 
+
 class DrcsWriter:
 
     def __init__(self, f8bit=False):
@@ -210,4 +210,3 @@ class DrcsWriter:
                                        use_unicode,
                                        ncolor=ncolor)
         drcs_converter.write(output, defonly=defonly, startoffset=startoffset)
-
