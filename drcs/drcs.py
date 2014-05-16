@@ -45,6 +45,7 @@ class DrcsConverter:
         self._use_unicode = use_unicode
         width = self.cellwidth * self.columns
         height = self.cellheight * rows
+        height += 6 - height % 6
         image = image.resize((width, height))
 
         if ncolor > 256:
